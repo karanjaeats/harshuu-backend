@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
+const mongoose = require("mongoose");
 require("dotenv").config();
 
 const app = express();
@@ -16,6 +17,21 @@ app.set("trust proxy", 1);
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
+
+/**
+ * MongoDB Connection
+ */
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log("MongoDB connected ✅");
+  } catch (error) {
+    console.error("MongoDB connection failed ❌", error.message);
+    process.exit(1);
+  }
+};
+
+connectDB();
 
 /**
  * Health Check
