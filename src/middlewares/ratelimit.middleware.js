@@ -1,9 +1,9 @@
 /**
  * HARSHUU Backend
- * Rate Limiting Middleware (Production Grade)
+ * Rate limiting Middleware (Production Grade)
  */
 
-const rateLimit = require("express-rate-limit");
+const ratelimit = require("express-rate-limit");
 
 /**
  * ===============================
@@ -13,7 +13,7 @@ const rateLimit = require("express-rate-limit");
  * - Auth routes
  * - Public APIs
  */
-const generalLimiter = rateLimit({
+const generallimiter = ratelimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // 100 requests per IP
   standardHeaders: true,
@@ -33,7 +33,7 @@ const generalLimiter = rateLimit({
  * - OTP verify
  * - Login
  */
-const authLimiter = rateLimit({
+const authlimiter = ratelimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
   max: 10, // 10 OTP attempts
   standardHeaders: true,
@@ -51,7 +51,7 @@ const authLimiter = rateLimit({
  * ===============================
  * Prevents order spam & payment abuse
  */
-const orderLimiter = rateLimit({
+const orderlimiter = ratelimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
   max: 30, // 30 order/payment actions
   standardHeaders: true,
@@ -64,7 +64,7 @@ const orderLimiter = rateLimit({
 });
 
 module.exports = {
-  generalLimiter,
-  authLimiter,
-  orderLimiter,
+  generallimiter,
+  authlimiter,
+  orderlimiter,
 };
