@@ -1,12 +1,29 @@
+/**
+ * HARSHUU Backend
+ * Restaurant Routes
+ * Roles: RESTAURANT, ADMIN
+ * Production-grade (Zomato / Swiggy style)
+ */
+
 const express = require("express");
 const auth = require("../middlewares/auth.middleware");
 const role = require("../middlewares/role.middleware");
+
 const Restaurant = require("../models/Restaurant");
+const Order = require("../models/Order");
+const MenuCategory = require("../models/MenuCategory");
+const MenuItem = require("../models/MenuItem");
+
+const { ORDER_STATUS } = require("../config/constants");
 
 const router = express.Router();
 
 /**
- * RESTAURANT REGISTER (Only RESTAURANT role)
+ * =====================================
+ * REGISTER / ONBOARD RESTAURANT
+ * =====================================
+ * POST /api/restaurant/register
+ * Role: RESTAURANT
  */
 router.post(
   "/register",
@@ -15,11 +32,10 @@ router.post(
   async (req, res) => {
     try {
       const existing = await Restaurant.findOne({ ownerId: req.user.id });
-
       if (existing) {
         return res.status(400).json({
           success: false,
-          message: "Restaurant already registered"
+          message: "Restaurant already registered",
         });
       }
 
@@ -28,13 +44,246 @@ router.post(
         name: req.body.name,
         address: req.body.address,
         location: req.body.location, // { lat, lng }
-        deliveryRadius: req.body.deliveryRadius || 5
+        deliveryRadiusKm: req.body.deliveryRadiusKm,
       });
 
-      res.json({
+      return res.status(201).json({
         success: true,
-        restaurant
+        restaurant,
       });
+    } catch (error) {
+      console.error("RESTAURANT REGISTER ERROR:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to register restaurant",
+      });
+    }
+  }
+);
+
+/**
+ * =====================================
+ * GET OWN RESTAURANT PROFILE
+ * =====================================
+ * GET /api/restaurant/me
+ * Role: RESTAURANT
+ */
+router.get(
+  "/me",
+  auth,
+  role("RESTAURANT"),
+  async (req, res) => {
+    try {
+      const restaurant = await Restaurant.findOne({ ownerId: req.user.id });
+      if (!restaurant) {
+        return res.status(404).json({
+          success: false,
+          message: "Restaurant not found",
+        });
+      }
+
+      return res.json({
+        success: true,
+        restaurant,
+      });
+    } catch (error) {
+      console.error("GET RESTAURANT ERROR:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch restaurant",
+      });
+    }
+  }
+);
+
+/**
+ * =====================================
+ * OPEN / CLOSE RESTAURANT
+ * =====================================
+ * PATCH /api/restaurant/status
+ * Role: RESTAURANT
+ */
+router.patch(
+  "/status",
+  auth,
+  role("RESTAURANT"),
+  async (req, res) => {
+    try {
+      const { isOpen } = req.body;
+
+      await Restaurant.findOneAndUpdate(
+        { ownerId: req.user.id },
+        { isOpen }
+      );
+
+      return res.json({
+        success: true,
+        message: `Restaurant ${isOpen ? "opened" : "closed"}`,
+      });
+    } catch (error) {
+      console.error("STATUS UPDATE ERROR:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update status",
+      });
+    }
+  }
+);
+
+/**
+ * =====================================
+ * ADD MENU CATEGORY
+ * =====================================
+ * POST /api/restaurant/menu/category
+ * Role: RESTAURANT
+ */
+router.post(
+  "/menu/category",
+  auth,
+  role("RESTAURANT"),
+  async (req, res) => {
+    try {
+      const restaurant = await Restaurant.findOne({ ownerId: req.user.id });
+
+      const category = await MenuCategory.create({
+        restaurantId: restaurant._id,
+        name: req.body.name,
+      });
+
+      return res.status(201).json({
+        success: true,
+        category,
+      });
+    } catch (error) {
+      console.error("ADD CATEGORY ERROR:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to add category",
+      });
+    }
+  }
+);
+
+/**
+ * =====================================
+ * ADD MENU ITEM
+ * =====================================
+ * POST /api/restaurant/menu/item
+ * Role: RESTAURANT
+ */
+router.post(
+  "/menu/item",
+  auth,
+  role("RESTAURANT"),
+  async (req, res) => {
+    try {
+      const restaurant = await Restaurant.findOne({ ownerId: req.user.id });
+
+      const item = await MenuItem.create({
+        restaurantId: restaurant._id,
+        categoryId: req.body.categoryId,
+        name: req.body.name,
+        price: req.body.price,
+        isAvailable: true,
+      });
+
+      return res.status(201).json({
+        success: true,
+        item,
+      });
+    } catch (error) {
+      console.error("ADD ITEM ERROR:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to add item",
+      });
+    }
+  }
+);
+
+/**
+ * =====================================
+ * GET RESTAURANT ORDERS
+ * =====================================
+ * GET /api/restaurant/orders
+ * Role: RESTAURANT
+ */
+router.get(
+  "/orders",
+  auth,
+  role("RESTAURANT"),
+  async (req, res) => {
+    try {
+      const restaurant = await Restaurant.findOne({ ownerId: req.user.id });
+
+      const orders = await Order.find({
+        restaurantId: restaurant._id,
+      })
+        .sort({ createdAt: -1 })
+        .populate("userId", "name mobile")
+        .populate("deliveryPartnerId", "name mobile");
+
+      return res.json({
+        success: true,
+        orders,
+      });
+    } catch (error) {
+      console.error("GET ORDERS ERROR:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch orders",
+      });
+    }
+  }
+);
+
+/**
+ * =====================================
+ * ACCEPT / REJECT ORDER
+ * =====================================
+ * POST /api/restaurant/orders/:id/action
+ * Role: RESTAURANT
+ */
+router.post(
+  "/orders/:id/action",
+  auth,
+  role("RESTAURANT"),
+  async (req, res) => {
+    try {
+      const { action } = req.body; // ACCEPT / REJECT
+
+      const order = await Order.findById(req.params.id);
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: "Order not found",
+        });
+      }
+
+      if (action === "ACCEPT") {
+        order.status = ORDER_STATUS.ACCEPTED;
+      } else if (action === "REJECT") {
+        order.status = ORDER_STATUS.CANCELLED;
+        order.cancelledBy = "RESTAURANT";
+      }
+
+      await order.save();
+
+      return res.json({
+        success: true,
+        message: `Order ${action.toLowerCase()}ed`,
+      });
+    } catch (error) {
+      console.error("ORDER ACTION ERROR:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to process order",
+      });
+    }
+  }
+);
+
+module.exports = router;      });
     } catch (err) {
       res.status(500).json({
         success: false,
