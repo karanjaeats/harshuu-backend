@@ -54,7 +54,7 @@ app.get("/", (req, res) => {
 /* ---------------------------------------------------
    API ROUTES
 --------------------------------------------------- */
-app.use("/api/auth", rateLimiter, require("./src/routes/auth.routes"));
+app.use("/api/auth", require("./src/routes/auth.routes"));
 app.use("/api/user", require("./src/routes/user.routes"));
 app.use("/api/restaurant", require("./src/routes/restaurant.routes"));
 app.use("/api/menu", require("./src/routes/menu.routes"));
