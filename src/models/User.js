@@ -174,3 +174,30 @@ userSchema.methods.toSafeObject = function () {
 };
 
 module.exports = mongoose.model("User", userSchema);
+
+const User = require("../models/User");
+
+const createDefaultAdmin = async () => {
+  try {
+    const adminMobile = process.env.ADMIN_MOBILE || "9999999999";
+
+    const existingAdmin = await User.findOne({
+      mobile: adminMobile,
+      role: "ADMIN"
+    });
+
+    if (!existingAdmin) {
+      await User.create({
+        mobile: adminMobile,
+        role: "ADMIN",
+        isActive: true
+      });
+
+      console.log("✅ Default ADMIN created:", adminMobile);
+    } else {
+      console.log("ℹ️ ADMIN already exists:", adminMobile);
+    }
+  } catch (err) {
+    console.error("❌ Admin auto-create failed", err.message);
+  }
+};
