@@ -63,30 +63,30 @@ app.use("/api/delivery", require("./src/routes/delivery.routes"));
 app.use("/api/payment", require("./src/routes/payment.routes"));
 app.use("/api/admin", require("./src/routes/admin.routes"));
 
-/* ---------------------------------------------------
-   404 HANDLER
---------------------------------------------------- */
+/**
+ * 404 Handler
+ */
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: "API route not found",
+    message: "API route not found"
   });
 });
 
-/* ---------------------------------------------------
-   GLOBAL ERROR HANDLER (LAST)
---------------------------------------------------- */
+/**
+ * Global Error Handler
+ */
 app.use((err, req, res, next) => {
-  console.error("❌ ERROR:", err.stack);
+  console.error("ERROR:", err);
   res.status(500).json({
     success: false,
-    message: "Internal Server Error",
+    message: "Internal Server Error"
   });
 });
 
-/* ---------------------------------------------------
-   SERVER START (ONLY ONCE)
---------------------------------------------------- */
+/**
+ * Server Start
+ */
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
