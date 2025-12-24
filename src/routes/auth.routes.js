@@ -1,7 +1,6 @@
 /**
  * HARSHUU Backend
  * Authentication Routes (OTP + JWT)
- * Production-grade (Zomato / Swiggy style)
  */
 
 const express = require("express");
@@ -11,19 +10,16 @@ const Wallet = require("../models/Wallet");
 const {
   signAccessToken,
   signRefreshToken,
+  verifyRefreshToken,
 } = require("../config/jwt");
 
 const { ROLES, OTP_CONFIG } = require("../config/constants");
 
 const router = express.Router();
 
-/**
- * ==============================
- * SEND OTP (LOGIN / REGISTER)
- * ==============================
- * POST /api/auth/send-otp
- * body: { mobile }
- */
+/* ===============================
+   SEND OTP
+================================ */
 router.post("/send-otp", async (req, res) => {
   try {
     const { mobile } = req.body;
@@ -35,12 +31,8 @@ router.post("/send-otp", async (req, res) => {
       });
     }
 
-    // Generate OTP
-    const otp = Math.floor(
-      100000 + Math.random() * 900000
-    );
+    const otp = Math.floor(100000 + Math.random() * 900000);
 
-    // Find or create user
     let user = await User.findOne({ mobile });
 
     if (!user) {
@@ -48,28 +40,20 @@ router.post("/send-otp", async (req, res) => {
         mobile,
         role: ROLES.USER,
       });
-
-      // Create wallet for new user
       await Wallet.create({ userId: user._id });
     }
 
-    // Set OTP
     await user.setOTP(otp, OTP_CONFIG.EXPIRY_MINUTES);
     await user.save();
 
-    /**
-     * ⚠️ REAL WORLD:
-     * Send OTP via SMS provider here (MSG91 / Twilio)
-     * For now, returning OTP only for development
-     */
-    console.log("🔐 OTP for", mobile, "=>", otp);
+    console.log("🔐 OTP:", mobile, otp);
 
     return res.json({
       success: true,
       message: "OTP sent successfully",
     });
-  } catch (error) {
-    console.error("SEND OTP ERROR:", error);
+  } catch (err) {
+    console.error(err);
     return res.status(500).json({
       success: false,
       message: "Failed to send OTP",
@@ -77,13 +61,9 @@ router.post("/send-otp", async (req, res) => {
   }
 });
 
-/**
- * ==============================
- * VERIFY OTP & LOGIN
- * ==============================
- * POST /api/auth/verify-otp
- * body: { mobile, otp }
- */
+/* ===============================
+   VERIFY OTP
+================================ */
 router.post("/verify-otp", async (req, res) => {
   try {
     const { mobile, otp } = req.body;
@@ -104,51 +84,31 @@ router.post("/verify-otp", async (req, res) => {
       });
     }
 
-    if (!user.isActive || user.isBlocked) {
-      return res.status(403).json({
-        success: false,
-        message: "Account blocked or inactive",
-      });
-    }
+    const valid = await user.verifyOTP(otp);
 
-    const isValidOtp = await user.verifyOTP(otp);
-
-    if (!isValidOtp) {
-      user.failedLoginAttempts += 1;
-      await user.save();
-
+    if (!valid) {
       return res.status(401).json({
         success: false,
         message: "Invalid or expired OTP",
       });
     }
 
-    // Clear OTP & reset attempts
     user.clearOTP();
-    user.failedLoginAttempts = 0;
     user.lastLoginAt = new Date();
     await user.save();
 
-    // JWT Payload
-    const payload = {
-      id: user._id,
-      role: user.role,
-    };
-
-    // Tokens
-    const accessToken = signAccessToken(payload);
-    const refreshToken = signRefreshToken(payload);
+    const payload = { id: user._id, role: user.role };
 
     return res.json({
       success: true,
       user: user.toSafeObject(),
       tokens: {
-        accessToken,
-        refreshToken,
+        accessToken: signAccessToken(payload),
+        refreshToken: signRefreshToken(payload),
       },
     });
-  } catch (error) {
-    console.error("VERIFY OTP ERROR:", error);
+  } catch (err) {
+    console.error(err);
     return res.status(500).json({
       success: false,
       message: "Login failed",
@@ -156,124 +116,42 @@ router.post("/verify-otp", async (req, res) => {
   }
 });
 
-/**
- * ==============================
- * REFRESH TOKEN
- * ==============================
- * POST /api/auth/refresh
- * body: { refreshToken }
- */
+/* ===============================
+   REFRESH TOKEN
+================================ */
 router.post("/refresh", async (req, res) => {
   try {
     const { refreshToken } = req.body;
 
-    if (!refreshToken) {
-      return res.status(400).json({
-        success: false,
-        message: "Refresh token required",
-      });
-    }
-
-    const { verifyRefreshToken } = require("../config/jwt");
-
     const decoded = verifyRefreshToken(refreshToken);
-
     const user = await User.findById(decoded.id);
 
-    if (!user || !user.isActive || user.isBlocked) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid refresh token",
-      });
+    if (!user) {
+      return res.status(401).json({ success: false });
     }
-
-    const newAccessToken = signAccessToken({
-      id: user._id,
-      role: user.role,
-    });
 
     return res.json({
       success: true,
-      accessToken: newAccessToken,
+      accessToken: signAccessToken({
+        id: user._id,
+        role: user.role,
+      }),
     });
-  } catch (error) {
-    console.error("REFRESH TOKEN ERROR:", error);
+  } catch (err) {
     return res.status(401).json({
       success: false,
-      message: "Invalid or expired refresh token",
+      message: "Invalid refresh token",
     });
   }
 });
 
-/**
- * ==============================
- * LOGOUT
- * ==============================
- * POST /api/auth/logout
- */
-router.post("/logout", async (req, res) => {
-  // Stateless JWT → frontend deletes token
+/* ===============================
+   LOGOUT
+================================ */
+router.post("/logout", (req, res) => {
   return res.json({
     success: true,
-    message: "Logged out successfully",
-  });
-});
-
-module.exports = router;      return res.status(400).json({
-        success: false,
-        message: "Mobile and OTP are required"
-      });
-    }
-
-    const user = await User.findOne({ mobile });
-
-    if (
-      !user ||
-      user.otp !== otp ||
-      !user.otpExpiry ||
-      user.otpExpiry < Date.now()
-    ) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid or expired OTP"
-      });
-    }
-
-    // OTP consume
-    user.otp = null;
-    user.otpExpiry = null;
-    await user.save();
-
-    // 🔐 JWT Token
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    return res.json({
-      success: true,
-      token,
-      role: user.role
-    });
-
-  } catch (error) {
-    console.error("VERIFY OTP ERROR:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Login failed"
-    });
-  }
-});
-
-/**
- * STEP 3️⃣
- * Get Logged-in User Profile
- */
-router.get("/me", async (req, res) => {
-  res.json({
-    success: true,
-    message: "Auth routes working"
+    message: "Logged out",
   });
 });
 
