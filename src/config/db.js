@@ -5,6 +5,37 @@
  */
 
 const mongoose = require("mongoose");
+const User = require("../models/User");
+
+const createDefaultAdmin = async () => {
+  try {
+    const adminMobile = process.env.ADMIN_MOBILE;
+
+    if (!adminMobile) {
+      console.warn("⚠️ ADMIN_MOBILE not set, skipping admin auto-create");
+      return;
+    }
+
+    const existingAdmin = await User.findOne({
+      mobile: adminMobile,
+      role: "ADMIN",
+    });
+
+    if (!existingAdmin) {
+      await User.create({
+        mobile: adminMobile,
+        role: "ADMIN",
+        isActive: true,
+      });
+
+      console.log(`✅ Default ADMIN created: ${adminMobile}`);
+    } else {
+      console.log(`ℹ️ ADMIN already exists: ${adminMobile}`);
+    }
+  } catch (err) {
+    console.error("❌ Admin auto-create failed:", err.message);
+  }
+};
 
 const connectDB = async () => {
   try {
@@ -25,6 +56,9 @@ const connectDB = async () => {
     console.log(
       `✅ MongoDB Connected: ${conn.connection.host}/${conn.connection.name}`
     );
+
+    // 🔐 AUTO CREATE ADMIN (ONLY ON SUCCESSFUL DB CONNECT)
+    await createDefaultAdmin();
 
     /**
      * Connection listeners (REAL-WORLD SAFETY)
