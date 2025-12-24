@@ -1,8 +1,9 @@
 {
   "name": "harshuu-backend",
   "version": "1.0.0",
-  "description": "Production-ready backend for HARSHUU food delivery platform (Zomato-style)",
+  "description": "Production-grade backend for HARSHUU food delivery platform (Zomato/Swiggy style)",
   "private": true,
+
   "main": "index.js",
 
   "scripts": {
@@ -25,7 +26,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.5.1",
     "morgan": "^1.10.0",
-    "razorpay": "^2.9.4"
+    "razorpay": "^2.9.4",
+    "uuid": "^9.0.1"
   },
 
   "devDependencies": {
