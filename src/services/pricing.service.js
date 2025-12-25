@@ -4,7 +4,7 @@
  * Production-grade (Zomato / Swiggy style)
  */
 
-const AdminSettings = require("../models/AdminSettings");
+const AdminSettings = require("../models/adminSettings");
 const calculateDistance = require("../utils/distance");
 
 /**
@@ -55,9 +55,9 @@ exports.calculateOrderPricing = async ({
   }
 
   /**
-   * Delivery fee calculation
+   * Base delivery fee
    */
-  let deliveryFee =
+  const baseDeliveryFee =
     settings.baseDeliveryFee +
     distanceKm * settings.perKmDeliveryFee;
 
@@ -65,13 +65,20 @@ exports.calculateOrderPricing = async ({
    * Surge pricing
    */
   let surgeMultiplier = 1;
+  let surgeFee = 0;
+
   if (settings.isSurgeActive) {
     surgeMultiplier = settings.surgeMultiplier;
-    deliveryFee *= surgeMultiplier;
+    surgeFee = baseDeliveryFee * (surgeMultiplier - 1);
   }
 
   /**
-   * Platform commission
+   * Final delivery fee
+   */
+  const deliveryFee = baseDeliveryFee + surgeFee;
+
+  /**
+   * Platform commission (for reporting)
    */
   const commission =
     (itemTotal * settings.commissionPercentage) / 100;
@@ -83,7 +90,7 @@ exports.calculateOrderPricing = async ({
     ((itemTotal + deliveryFee) * settings.gstPercentage) / 100;
 
   /**
-   * Final amount
+   * Final payable amount
    */
   const totalAmount =
     itemTotal + deliveryFee + gst;
@@ -93,10 +100,12 @@ exports.calculateOrderPricing = async ({
 
     breakdown: {
       itemTotal: round(itemTotal),
+      baseDeliveryFee: round(baseDeliveryFee),
+      surgeFee: round(surgeFee),
       deliveryFee: round(deliveryFee),
       gst: round(gst),
-      surgeMultiplier,
       commission: round(commission),
+      surgeMultiplier,
       distanceKm: round(distanceKm),
     },
 
@@ -111,7 +120,4 @@ exports.calculateOrderPricing = async ({
  */
 const round = (value) => {
   return Math.round(value * 100) / 100;
-};    surgeFee,
-    total: subtotal + deliveryFee + surgeFee
-  };
 };
