@@ -9,7 +9,7 @@ const express = require("express");
 const auth = require("../middlewares/auth.middleware");
 const role = require("../middlewares/role.middleware");
 
-const DeliveryPartner = require("../models/DeliveryPartner");
+const DeliveryPartner = require("../models/deliverypartner");
 const Order = require("../models/Order");
 const Wallet = require("../models/Wallet");
 
