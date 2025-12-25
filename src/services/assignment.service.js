@@ -4,9 +4,9 @@
  * Zomato / Swiggy style (production grade)
  */
 
-const Order = require("../models/Order");
-const DeliveryPartner = require("../models/DeliveryPartner");
-const Restaurant = require("../models/Restaurant");
+const Order = require("../models/order");
+const DeliveryPartner = require("../models/deliverypartner");
+const Restaurant = require("../models/restaurant");
 const { haversineDistance } = require("../utils/distance");
 
 /**

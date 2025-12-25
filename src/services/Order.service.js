@@ -4,11 +4,11 @@
  * Production-grade (Zomato / Swiggy style)
  */
 
-const Order = require("../models/Order");
-const Restaurant = require("../models/Restaurant");
-const DeliveryPartner = require("../models/DeliveryPartner");
-const Wallet = require("../models/Wallet");
-const AdminSettings = require("../models/AdminSettings");
+const Order = require("../models/order");
+const Restaurant = require("../models/restaurant");
+const DeliveryPartner = require("../models/deliverypartner");
+const Wallet = require("../models/wallet");
+const AdminSettings = require("../models/adminSettings");
 
 const assignmentService = require("./assignment.service");
 

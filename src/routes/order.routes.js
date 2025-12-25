@@ -9,10 +9,10 @@ const express = require("express");
 const auth = require("../middlewares/auth.middleware");
 const role = require("../middlewares/role.middleware");
 
-const Order = require("../models/Order");
-const Restaurant = require("../models/Restaurant");
-const MenuItem = require("../models/MenuItem");
-const DeliveryPartner = require("../models/DeliveryPartner");
+const Order = require("../models/order");
+const Restaurant = require("../models/restaurant");
+const MenuItem = require("../models/menuitem");
+const DeliveryPartner = require("../models/deliverypartner");
 
 const pricingService = require("../services/pricing.service");
 const assignmentService = require("../services/assignment.service");
