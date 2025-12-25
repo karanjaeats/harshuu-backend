@@ -3,7 +3,7 @@
  * Admin Authorization Middleware (Production Grade)
  */
 
-const User = require("../models/User");
+const User = require("../models/user");
 
 /**
  * ===============================

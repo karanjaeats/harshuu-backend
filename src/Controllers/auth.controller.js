@@ -4,8 +4,8 @@
  * OTP + JWT (Zomato / Swiggy style)
  */
 
-const User = require("../models/User");
-const Wallet = require("../models/Wallet");
+const User = require("../models/user");
+const Wallet = require("../models/wallet");
 
 const otpService = require("../services/otp.service");
 const jwtService = require("../config/jwt");

@@ -5,9 +5,9 @@
  */
 
 const crypto = require("crypto");
-const Order = require("../models/Order");
-const Payment = require("../models/Payment");
-const Wallet = require("../models/Wallet");
+const Order = require("../models/order");
+const Payment = require("../models/payment");
+const Wallet = require("../models/wallet");
 const razorpay = require("../config/razorpay");
 const paymentService = require("../services/payment.service");
 

@@ -4,10 +4,10 @@
  * Zomato / Swiggy style
  */
 
-const User = require("../models/User");
-const Order = require("../models/Order");
-const Wallet = require("../models/Wallet");
-const Review = require("../models/Review");
+const User = require("../models/user");
+const Order = require("../models/order");
+const Wallet = require("../models/wallet");
+const Review = require("../models/review");
 
 /**
  * ===============================
