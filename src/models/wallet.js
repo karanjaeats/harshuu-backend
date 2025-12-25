@@ -7,16 +7,17 @@
 const mongoose = require("mongoose");
 const { WALLET_TXN_TYPE } = require("../config/constants");
 
+/**
+ * ============================
+ * WALLET TRANSACTION SCHEMA
+ * ============================
+ */
 const walletTransactionSchema = new mongoose.Schema(
   {
-    /**
-     * TRANSACTION INFO
-     */
     type: {
       type: String,
       enum: Object.values(WALLET_TXN_TYPE),
       required: true,
-      index: true,
     },
 
     amount: {
@@ -25,13 +26,9 @@ const walletTransactionSchema = new mongoose.Schema(
       min: 0,
     },
 
-    /**
-     * CONTEXT (TRACEABILITY)
-     */
     orderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
-      index: true,
     },
 
     paymentId: {
@@ -52,11 +49,13 @@ const walletTransactionSchema = new mongoose.Schema(
   { _id: false }
 );
 
+/**
+ * ============================
+ * WALLET MAIN SCHEMA
+ * ============================
+ */
 const walletSchema = new mongoose.Schema(
   {
-    /**
-     * OWNER (USER / DELIVERY / RESTAURANT PAYOUT)
-     */
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -65,18 +64,12 @@ const walletSchema = new mongoose.Schema(
       index: true,
     },
 
-    /**
-     * CURRENT BALANCE
-     */
     balance: {
       type: Number,
       default: 0,
       min: 0,
     },
 
-    /**
-     * LEDGER (SOURCE OF TRUTH)
-     */
     transactions: {
       type: [walletTransactionSchema],
       default: [],
@@ -90,7 +83,7 @@ const walletSchema = new mongoose.Schema(
 
 /**
  * ============================
- * INDEXES
+ * INDEXES (ONLY HERE)
  * ============================
  */
 walletSchema.index({ userId: 1 });
@@ -99,12 +92,8 @@ walletSchema.index({ "transactions.orderId": 1 });
 
 /**
  * ============================
- * WALLET OPERATIONS (ATOMIC)
+ * WALLET OPERATIONS
  * ============================
- */
-
-/**
- * Credit wallet (refund, incentive, payout)
  */
 walletSchema.methods.credit = function ({
   amount,
@@ -123,9 +112,6 @@ walletSchema.methods.credit = function ({
   });
 };
 
-/**
- * Debit wallet (wallet payment)
- */
 walletSchema.methods.debit = function ({
   amount,
   type,
@@ -147,7 +133,7 @@ walletSchema.methods.debit = function ({
 
 /**
  * ============================
- * SAFE JSON RESPONSE
+ * SAFE RESPONSE
  * ============================
  */
 walletSchema.methods.toSafeObject = function () {
