@@ -14,9 +14,9 @@ const role = require("../middlewares/role.middleware");
 const razorpay = require("../config/razorpay");
 const { ORDER_STATUS, PAYMENT_STATUS } = require("../config/constants");
 
-const Order = require("../models/Order");
-const Payment = require("../models/Payment");
-const Wallet = require("../models/Wallet");
+const Order = require("../models/order");
+const Payment = require("../models/payment");
+const Wallet = require("../models/wallet");
 
 const router = express.Router();
 
