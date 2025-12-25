@@ -8,12 +8,12 @@ const express = require("express");
 const auth = require("../middlewares/auth.middleware");
 const role = require("../middlewares/role.middleware");
 
-const User = require("../models/User");
-const Restaurant = require("../models/Restaurant");
-const DeliveryPartner = require("../models/DeliveryPartner");
-const Order = require("../models/Order");
-const AdminSettings = require("../models/AdminSettings");
-const Wallet = require("../models/Wallet");
+const User = require("../models/user");
+const Restaurant = require("../models/restaurant");
+const DeliveryPartner = require("../models/deliverypartner");
+const Order = require("../models/order");
+const AdminSettings = require("../models/adminSettings");
+const Wallet = require("../models/wallet");
 
 const { ORDER_STATUS } = require("../config/constants");
 

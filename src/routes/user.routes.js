@@ -9,9 +9,9 @@ const express = require("express");
 const auth = require("../middlewares/auth.middleware");
 const role = require("../middlewares/role.middleware");
 
-const User = require("../models/User");
-const Order = require("../models/Order");
-const Wallet = require("../models/Wallet");
+const User = require("../models/user");
+const Order = require("../models/order");
+const Wallet = require("../models/wallet");
 
 const router = express.Router();
 

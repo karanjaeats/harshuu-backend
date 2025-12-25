@@ -8,8 +8,8 @@
  * - WhatsApp (pluggable provider)
  */
 
-const User = require("../models/User");
-const Order = require("../models/Order");
+const User = require("../models/user");
+const Order = require("../models/order");
 
 /**
  * ===============================

@@ -175,7 +175,7 @@ userSchema.methods.toSafeObject = function () {
 
 module.exports = mongoose.model("User", userSchema);
 
-const User = require("../models/User");
+const User = require("../models/user");
 
 const createDefaultAdmin = async () => {
   try {

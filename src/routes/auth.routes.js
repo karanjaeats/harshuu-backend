@@ -4,8 +4,8 @@
  */
 
 const express = require("express");
-const User = require("../models/User");
-const Wallet = require("../models/Wallet");
+const User = require("../models/user");
+const Wallet = require("../models/wallet");
 
 const {
   signAccessToken,
