@@ -4,7 +4,7 @@
  * Production-grade – Zomato / Swiggy style
  */
 
-const User = require("../models/user");
+const User = require("../models/User");
 const Restaurant = require("../models/Restaurant");
 const DeliveryPartner = require("../models/DeliveryPartner");
 const Order = require("../models/Order");
