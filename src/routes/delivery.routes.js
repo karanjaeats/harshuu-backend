@@ -10,8 +10,8 @@ const auth = require("../middlewares/auth.middleware");
 const role = require("../middlewares/role.middleware");
 
 const DeliveryPartner = require("../models/deliverypartner");
-const Order = require("../models/Order");
-const Wallet = require("../models/Wallet");
+const Order = require("../models/order");
+const Wallet = require("../models/wallet");
 
 const { ORDER_STATUS } = require("../config/constants");
 

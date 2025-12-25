@@ -3,7 +3,7 @@
  * Wallet Service (Production Grade)
  */
 
-const Wallet = require("../models/Wallet");
+const Wallet = require("../models/wallet");
 
 /**
  * ===============================

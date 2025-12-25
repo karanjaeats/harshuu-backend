@@ -7,9 +7,9 @@
 const crypto = require("crypto");
 const Razorpay = require("razorpay");
 
-const Order = require("../models/Order");
-const Payment = require("../models/Payment");
-const Wallet = require("../models/Wallet");
+const Order = require("../models/order");
+const Payment = require("../models/payment");
+const Wallet = require("../models/wallet");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
