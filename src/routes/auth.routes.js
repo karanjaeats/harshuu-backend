@@ -1,117 +1,92 @@
 /**
  * HARSHUU Backend
- * Authentication Routes (OTP + JWT)
+ * Authentication Routes (EMAIL + PASSWORD + JWT)
+ * ADMIN LOGIN (Production Ready)
  */
 
 const express = require("express");
+const bcrypt = require("bcryptjs");
 const User = require("../models/user");
-const Wallet = require("../models/wallet");
-
 const {
   signAccessToken,
   signRefreshToken,
-  verifyRefreshToken,
+  verifyRefreshToken
 } = require("../config/jwt");
-
-const { ROLES, OTP_CONFIG } = require("../config/constants");
 
 const router = express.Router();
 
 /* ===============================
-   SEND OTP
+   ADMIN LOGIN (EMAIL + PASSWORD)
+   POST /api/auth/admin-login
 ================================ */
-router.post("/send-otp", async (req, res) => {
+router.post("/admin-login", async (req, res) => {
   try {
-    const { mobile } = req.body;
+    const { email, password } = req.body;
 
-    if (!mobile) {
+    // 1️⃣ validation
+    if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Mobile number is required",
+        message: "Email and password are required"
       });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000);
+    // 2️⃣ find admin
+    const admin = await User.findOne({
+      email,
+      role: "ADMIN"
+    }).select("+password");
 
-    let user = await User.findOne({ mobile });
-
-    if (!user) {
-      user = await User.create({
-        mobile,
-        role: ROLES.USER,
-      });
-      await Wallet.create({ userId: user._id });
-    }
-
-    await user.setOTP(otp, OTP_CONFIG.EXPIRY_MINUTES);
-    await user.save();
-
-    console.log("🔐 OTP:", mobile, otp);
-
-    return res.json({
-      success: true,
-      message: "OTP sent successfully",
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to send OTP",
-    });
-  }
-});
-
-/* ===============================
-   VERIFY OTP
-================================ */
-router.post("/verify-otp", async (req, res) => {
-  try {
-    const { mobile, otp } = req.body;
-
-    if (!mobile || !otp) {
-      return res.status(400).json({
-        success: false,
-        message: "Mobile and OTP are required",
-      });
-    }
-
-    const user = await User.findOne({ mobile }).select("+otpHash +otpExpiresAt");
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    const valid = await user.verifyOTP(otp);
-
-    if (!valid) {
+    if (!admin) {
       return res.status(401).json({
         success: false,
-        message: "Invalid or expired OTP",
+        message: "Admin not found"
       });
     }
 
-    user.clearOTP();
-    user.lastLoginAt = new Date();
-    await user.save();
+    if (!admin.isActive || admin.isBlocked) {
+      return res.status(403).json({
+        success: false,
+        message: "Admin account disabled"
+      });
+    }
 
-    const payload = { id: user._id, role: user.role };
+    // 3️⃣ password check
+    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid password"
+      });
+    }
+
+    // 4️⃣ tokens
+    const payload = {
+      id: admin._id,
+      role: admin.role
+    };
+
+    const accessToken = signAccessToken(payload);
+    const refreshToken = signRefreshToken(payload);
 
     return res.json({
       success: true,
-      user: user.toSafeObject(),
-      tokens: {
-        accessToken: signAccessToken(payload),
-        refreshToken: signRefreshToken(payload),
+      admin: {
+        id: admin._id,
+        email: admin.email,
+        role: admin.role
       },
+      tokens: {
+        accessToken,
+        refreshToken
+      }
     });
+
   } catch (err) {
-    console.error(err);
+    console.error("ADMIN LOGIN ERROR:", err);
     return res.status(500).json({
       success: false,
-      message: "Login failed",
+      message: "Login failed"
     });
   }
 });
@@ -122,25 +97,34 @@ router.post("/verify-otp", async (req, res) => {
 router.post("/refresh", async (req, res) => {
   try {
     const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Refresh token required"
+      });
+    }
 
     const decoded = verifyRefreshToken(refreshToken);
     const user = await User.findById(decoded.id);
 
-    if (!user) {
-      return res.status(401).json({ success: false });
+    if (!user || !user.isActive || user.isBlocked) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid refresh token"
+      });
     }
 
     return res.json({
       success: true,
       accessToken: signAccessToken({
         id: user._id,
-        role: user.role,
-      }),
+        role: user.role
+      })
     });
   } catch (err) {
     return res.status(401).json({
       success: false,
-      message: "Invalid refresh token",
+      message: "Invalid refresh token"
     });
   }
 });
@@ -151,7 +135,7 @@ router.post("/refresh", async (req, res) => {
 router.post("/logout", (req, res) => {
   return res.json({
     success: true,
-    message: "Logged out",
+    message: "Logged out successfully"
   });
 });
 
