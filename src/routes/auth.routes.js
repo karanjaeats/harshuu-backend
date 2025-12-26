@@ -93,7 +93,7 @@ router.post("/admin-login", async (req, res) => {
     console.error("ADMIN LOGIN ERROR:", err);
     return res.status(500).json({
       success: false,
-      message: "Login failed",
+      message: "Login failed auth",
     });
   }
 });
