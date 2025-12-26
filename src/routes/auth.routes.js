@@ -5,12 +5,11 @@
  */
 
 const express = require("express");
-const bcrypt = require("bcryptjs");
 const User = require("../models/user");
 const {
   signAccessToken,
   signRefreshToken,
-  verifyRefreshToken
+  verifyRefreshToken,
 } = require("../config/jwt");
 
 const router = express.Router();
@@ -23,70 +22,78 @@ router.post("/admin-login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1️⃣ validation
+    // 1️⃣ Validation
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Email and password are required"
+        message: "Email and password are required",
       });
     }
 
-    // 2️⃣ find admin
-    const admin = await User.findOne({
-      email,
-      role: "ADMIN"
-    }).select("+password");
+    // 2️⃣ Find user by email (select password explicitly)
+    const admin = await User.findOne({ email })
+      .select("+password +role +isActive +isBlocked");
 
-    if (!admin) {
+    // 3️⃣ Validate admin
+    if (!admin || admin.role !== "ADMIN") {
       return res.status(401).json({
         success: false,
-        message: "Admin not found"
+        message: "Admin not found",
       });
     }
 
     if (!admin.isActive || admin.isBlocked) {
       return res.status(403).json({
         success: false,
-        message: "Admin account disabled"
+        message: "Admin account disabled",
       });
     }
 
-    // 3️⃣ password check
-    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!admin.password) {
+      return res.status(500).json({
+        success: false,
+        message: "Admin password not configured",
+      });
+    }
+
+    // 4️⃣ Password check (✅ CORRECT WAY)
+    const isMatch = await admin.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: "Invalid password"
+        message: "Invalid password",
       });
     }
 
-    // 4️⃣ tokens
+    // 5️⃣ Tokens
     const payload = {
       id: admin._id,
-      role: admin.role
+      role: admin.role,
     };
 
     const accessToken = signAccessToken(payload);
     const refreshToken = signRefreshToken(payload);
+
+    admin.lastLoginAt = new Date();
+    await admin.save();
 
     return res.json({
       success: true,
       admin: {
         id: admin._id,
         email: admin.email,
-        role: admin.role
+        role: admin.role,
       },
       tokens: {
         accessToken,
-        refreshToken
-      }
+        refreshToken,
+      },
     });
-
   } catch (err) {
     console.error("ADMIN LOGIN ERROR:", err);
     return res.status(500).json({
       success: false,
-      message: "Login failed"
+      message: "Login failed",
     });
   }
 });
@@ -97,10 +104,11 @@ router.post("/admin-login", async (req, res) => {
 router.post("/refresh", async (req, res) => {
   try {
     const { refreshToken } = req.body;
+
     if (!refreshToken) {
       return res.status(400).json({
         success: false,
-        message: "Refresh token required"
+        message: "Refresh token required",
       });
     }
 
@@ -110,7 +118,7 @@ router.post("/refresh", async (req, res) => {
     if (!user || !user.isActive || user.isBlocked) {
       return res.status(401).json({
         success: false,
-        message: "Invalid refresh token"
+        message: "Invalid refresh token",
       });
     }
 
@@ -118,13 +126,13 @@ router.post("/refresh", async (req, res) => {
       success: true,
       accessToken: signAccessToken({
         id: user._id,
-        role: user.role
-      })
+        role: user.role,
+      }),
     });
   } catch (err) {
     return res.status(401).json({
       success: false,
-      message: "Invalid refresh token"
+      message: "Invalid refresh token",
     });
   }
 });
@@ -135,7 +143,7 @@ router.post("/refresh", async (req, res) => {
 router.post("/logout", (req, res) => {
   return res.json({
     success: true,
-    message: "Logged out successfully"
+    message: "Logged out successfully",
   });
 });
 
