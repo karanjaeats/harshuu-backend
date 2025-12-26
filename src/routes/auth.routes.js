@@ -1,7 +1,6 @@
 /**
  * HARSHUU Backend
  * Authentication Routes (EMAIL + PASSWORD + JWT)
- * ADMIN LOGIN (Production Ready)
  */
 
 const express = require("express");
@@ -15,12 +14,14 @@ const {
 const router = express.Router();
 
 /* ===============================
-   ADMIN LOGIN (EMAIL + PASSWORD)
+   ADMIN LOGIN
    POST /api/auth/admin-login
 ================================ */
 router.post("/admin-login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    console.log("LOGIN BODY:", req.body); // 🔍 debug
+
+    const { email, password } = req.body || {};
 
     // 1️⃣ Validation
     if (!email || !password) {
@@ -30,11 +31,10 @@ router.post("/admin-login", async (req, res) => {
       });
     }
 
-    // 2️⃣ Find user by email (select password explicitly)
+    // 2️⃣ Find admin
     const admin = await User.findOne({ email })
       .select("+password +role +isActive +isBlocked");
 
-    // 3️⃣ Validate admin
     if (!admin || admin.role !== "ADMIN") {
       return res.status(401).json({
         success: false,
@@ -49,14 +49,7 @@ router.post("/admin-login", async (req, res) => {
       });
     }
 
-    if (!admin.password) {
-      return res.status(500).json({
-        success: false,
-        message: "Admin password not configured",
-      });
-    }
-
-    // 4️⃣ Password check (✅ CORRECT WAY)
+    // 3️⃣ Password check
     const isMatch = await admin.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
@@ -65,7 +58,7 @@ router.post("/admin-login", async (req, res) => {
       });
     }
 
-    // 5️⃣ Tokens
+    // 4️⃣ Generate tokens
     const payload = {
       id: admin._id,
       role: admin.role,
@@ -74,6 +67,7 @@ router.post("/admin-login", async (req, res) => {
     const accessToken = signAccessToken(payload);
     const refreshToken = signRefreshToken(payload);
 
+    // 5️⃣ Update last login
     admin.lastLoginAt = new Date();
     await admin.save();
 
@@ -93,7 +87,7 @@ router.post("/admin-login", async (req, res) => {
     console.error("ADMIN LOGIN ERROR:", err);
     return res.status(500).json({
       success: false,
-      message: "Login failed auth",
+      message: "Login failed",
     });
   }
 });
@@ -103,7 +97,7 @@ router.post("/admin-login", async (req, res) => {
 ================================ */
 router.post("/refresh", async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    const { refreshToken } = req.body || {};
 
     if (!refreshToken) {
       return res.status(400).json({
@@ -140,7 +134,7 @@ router.post("/refresh", async (req, res) => {
 /* ===============================
    LOGOUT
 ================================ */
-router.post("/logout", (req, res) => {
+router.post("/logout", (_req, res) => {
   return res.json({
     success: true,
     message: "Logged out successfully",
