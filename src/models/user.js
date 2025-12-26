@@ -109,7 +109,7 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-userSchema.methods.comparePassword = function (password) {
+userSchema.methods.comparePassword = async function (plainPassword) {
   console.log("🔐 comparePassword called");
   console.log("➡️ Plain password received:", plainPassword ? "YES" : "NO");
   console.log("➡️ Hashed password from DB exists:", !!this.password);
@@ -119,7 +119,7 @@ userSchema.methods.comparePassword = function (password) {
     return false;
   }
 
-  const isMatch = bcrypt.compare(plainPassword, this.password);
+  const isMatch =  bcrypt.compare(plainPassword, this.password);
 
   console.log("✅ Password match result:", isMatch);
 
