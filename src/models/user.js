@@ -110,7 +110,20 @@ userSchema.pre("save", async function (next) {
 });
 
 userSchema.methods.comparePassword = function (password) {
-  return bcrypt.compare(password, this.password);
+  console.log("🔐 comparePassword called");
+  console.log("➡️ Plain password received:", plainPassword ? "YES" : "NO");
+  console.log("➡️ Hashed password from DB exists:", !!this.password);
+
+  if (!this.password) {
+    console.error("❌ ERROR: Hashed password is missing on user document");
+    return false;
+  }
+
+  const isMatch = await bcrypt.compare(plainPassword, this.password);
+
+  console.log("✅ Password match result:", isMatch);
+
+  return isMatch;
 };
 
 /* =========================
