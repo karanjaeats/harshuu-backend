@@ -1,7 +1,7 @@
 /**
  * HARSHUU Backend
  * User Model
- * Production-grade (Zomato / Swiggy style)
+ * OTP (Users) + Email/Password (Admin)
  */
 
 const mongoose = require("mongoose");
@@ -10,9 +10,9 @@ const { ROLES } = require("../config/constants");
 
 const userSchema = new mongoose.Schema(
   {
-    /**
-     * BASIC IDENTITY
-     */
+    /* =========================
+       BASIC IDENTITY
+    ========================== */
     name: {
       type: String,
       trim: true,
@@ -22,8 +22,8 @@ const userSchema = new mongoose.Schema(
 
     mobile: {
       type: String,
-      required: true,
       unique: true,
+      sparse: true, // ✅ allows admin without mobile conflict
       index: true,
     },
 
@@ -31,12 +31,19 @@ const userSchema = new mongoose.Schema(
       type: String,
       lowercase: true,
       trim: true,
+      unique: true,
+      sparse: true, // ✅ allows OTP users without email
       index: true,
     },
 
-    /**
-     * ROLE-BASED ACCESS CONTROL
-     */
+    password: {
+      type: String,
+      select: false, // ✅ critical
+    },
+
+    /* =========================
+       ROLE-BASED ACCESS
+    ========================== */
     role: {
       type: String,
       enum: Object.values(ROLES),
@@ -44,9 +51,9 @@ const userSchema = new mongoose.Schema(
       index: true,
     },
 
-    /**
-     * OTP AUTHENTICATION
-     */
+    /* =========================
+       OTP AUTH (FUTURE USE)
+    ========================== */
     otpHash: {
       type: String,
       select: false,
@@ -57,9 +64,9 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
-    /**
-     * ACCOUNT STATUS
-     */
+    /* =========================
+       ACCOUNT STATUS
+    ========================== */
     isActive: {
       type: Boolean,
       default: true,
@@ -71,9 +78,6 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
-    /**
-     * FRAUD & SECURITY TRACKING
-     */
     failedLoginAttempts: {
       type: Number,
       default: 0,
@@ -82,32 +86,6 @@ const userSchema = new mongoose.Schema(
     lastLoginAt: {
       type: Date,
     },
-
-    /**
-     * WALLET (USED FOR REFUNDS / PAYOUTS)
-     */
-    walletBalance: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-
-    /**
-     * LOCATION (FOR DELIVERY & PRICING)
-     */
-    location: {
-      address: String,
-      lat: Number,
-      lng: Number,
-    },
-
-    /**
-     * METADATA
-     */
-    deviceInfo: {
-      type: String,
-    },
-
   },
   {
     timestamps: true,
@@ -115,51 +93,49 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-/**
- * ============================
- * INDEXES (PERFORMANCE)
- * ============================
- */
+/* =========================
+   INDEXES
+========================== */
+userSchema.index({ email: 1 });
 userSchema.index({ mobile: 1 });
 userSchema.index({ role: 1, isActive: 1 });
 
-/**
- * ============================
- * OTP HELPERS
- * ============================
- */
+/* =========================
+   PASSWORD HASHING (ADMIN)
+========================== */
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
 
-/**
- * Set OTP
- */
+userSchema.methods.comparePassword = function (password) {
+  return bcrypt.compare(password, this.password);
+};
+
+/* =========================
+   OTP HELPERS (UNCHANGED)
+========================== */
 userSchema.methods.setOTP = async function (otp, expiryMinutes = 5) {
   const salt = await bcrypt.genSalt(10);
   this.otpHash = await bcrypt.hash(String(otp), salt);
   this.otpExpiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
 };
 
-/**
- * Verify OTP
- */
 userSchema.methods.verifyOTP = async function (otp) {
   if (!this.otpHash || !this.otpExpiresAt) return false;
   if (this.otpExpiresAt < Date.now()) return false;
   return bcrypt.compare(String(otp), this.otpHash);
 };
 
-/**
- * Clear OTP after successful login
- */
 userSchema.methods.clearOTP = function () {
   this.otpHash = undefined;
   this.otpExpiresAt = undefined;
 };
 
-/**
- * ============================
- * SAFE JSON RESPONSE
- * ============================
- */
+/* =========================
+   SAFE RESPONSE
+========================== */
 userSchema.methods.toSafeObject = function () {
   return {
     id: this._id,
@@ -167,37 +143,9 @@ userSchema.methods.toSafeObject = function () {
     mobile: this.mobile,
     email: this.email,
     role: this.role,
-    walletBalance: this.walletBalance,
     isActive: this.isActive,
     createdAt: this.createdAt,
   };
 };
 
 module.exports = mongoose.model("User", userSchema);
-
-const User = require("../models/user");
-
-const createDefaultAdmin = async () => {
-  try {
-    const adminMobile = process.env.ADMIN_MOBILE || "9999999999";
-
-    const existingAdmin = await User.findOne({
-      mobile: adminMobile,
-      role: "ADMIN"
-    });
-
-    if (!existingAdmin) {
-      await User.create({
-        mobile: adminMobile,
-        role: "ADMIN",
-        isActive: true
-      });
-
-      console.log("✅ Default ADMIN created:", adminMobile);
-    } else {
-      console.log("ℹ️ ADMIN already exists:", adminMobile);
-    }
-  } catch (err) {
-    console.error("❌ Admin auto-create failed", err.message);
-  }
-};
