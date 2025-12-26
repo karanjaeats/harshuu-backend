@@ -119,7 +119,7 @@ userSchema.methods.comparePassword = async function (plainPassword) {
     return false;
   }
 
-  const isMatch =  bcrypt.compare(plainPassword, this.password);
+  const isMatch = await bcrypt.compare(plainPassword, this.password);
 
   console.log("✅ Password match result:", isMatch);
 
